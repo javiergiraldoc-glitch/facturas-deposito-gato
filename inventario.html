@@ -5,77 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Inventario - Depósito El Gato</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #007BFF;
-    }
+    body { font-family: Arial; background: #f5f5f5; padding: 20px; }
     .container {
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
+      max-width: 900px; margin: auto; background: white;
+      padding: 20px; border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    .top-menu {
-      display: flex;
-      justify-content: space-around;
-      margin-bottom: 15px;
-    }
+    .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+    .header img { height: 80px; }
+    .top-menu { display: flex; justify-content: space-around; margin-bottom: 15px; }
     .top-menu a {
-      text-decoration: none;
-      background: #28a745;
-      color: white;
-      padding: 8px 15px;
-      border-radius: 5px;
+      text-decoration: none; background: #28a745; color: white;
+      padding: 8px 15px; border-radius: 5px;
     }
-    input, button {
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    button {
-      background: #007BFF;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-    th {
-      background: #007BFF;
-      color: white;
-    }
-    .flex {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
+    input, button { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    button { background: #007BFF; color: white; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    td, th { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #007BFF; color: white; }
+    .flex { display: flex; gap: 10px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Inventario</h1>
+
+    <div class="header">
+      <img src="logo.png">
+      <h1>Inventario</h1>
+    </div>
 
     <div class="top-menu">
       <a href="index.html">Inicio</a>
       <a href="facturacion.html">Facturación</a>
       <a href="historial.html">Historial</a>
+      <a href="facturas.html">Facturas Guardadas</a>
     </div>
 
     <div class="flex">
@@ -103,87 +66,85 @@
       </thead>
       <tbody></tbody>
     </table>
+
   </div>
 
-  <script>
-    let inventario = JSON.parse(localStorage.getItem("inventario")) || [];
+<script>
+let inventario = JSON.parse(localStorage.getItem("inventario")) || [];
 
-    function guardar() {
-      localStorage.setItem("inventario", JSON.stringify(inventario));
-    }
+function guardar() {
+  localStorage.setItem("inventario", JSON.stringify(inventario));
+}
 
-    function mostrar() {
-      const tbody = document.querySelector("#tabla tbody");
-      tbody.innerHTML = "";
+function mostrar() {
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = "";
 
-      inventario.forEach((p, i) => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${p.nombre}</td>
-            <td>$${p.costo.toLocaleString("es-CO")}</td>
-            <td>$${p.precio.toLocaleString("es-CO")}</td>
-            <td>${p.stock}</td>
-            <td>
-              <button onclick="sumar(${i})">+</button>
-              <input type="number" id="edit-${i}" value="${p.stock}" style="width:60px;text-align:center;">
-              <button onclick="editar(${i})">Guardar</button>
-            </td>
-            <td><button onclick="eliminar(${i})">🗑</button></td>
-          </tr>`;
-      });
-    }
+  inventario.forEach((p, i) => {
+    tbody.innerHTML += `
+      <tr>
+        <td>${p.nombre}</td>
+        <td>$${p.costo.toLocaleString("es-CO")}</td>
+        <td>$${p.precio.toLocaleString("es-CO")}</td>
+        <td>${p.stock}</td>
+        <td>
+          <button onclick="sumar(${i})">+</button>
+          <input type="number" id="edit-${i}" value="${p.stock}" style="width:60px;text-align:center;">
+          <button onclick="editar(${i})">Guardar</button>
+        </td>
+        <td><button onclick="eliminar(${i})">🗑</button></td>
+      </tr>`;
+  });
+}
 
-    function buscarProducto() {
-      const texto = document.getElementById("buscar").value.toLowerCase();
-      document.querySelectorAll("#tabla tbody tr").forEach(f => {
-        const nombre = f.children[0].textContent.toLowerCase();
-        f.style.display = nombre.includes(texto) ? "" : "none";
-      });
-    }
+function buscarProducto() {
+  const texto = document.getElementById("buscar").value.toLowerCase();
+  document.querySelectorAll("#tabla tbody tr").forEach(f => {
+    const nombre = f.children[0].textContent.toLowerCase();
+    f.style.display = nombre.includes(texto) ? "" : "none";
+  });
+}
 
-    function agregarProducto() {
-      const nombre = document.getElementById("nombre").value.trim();
-      const costo = parseInt(document.getElementById("costo").value);
-      const precio = parseInt(document.getElementById("precio").value);
-      const stock = parseInt(document.getElementById("stock").value);
+function agregarProducto() {
+  const nombre = document.getElementById("nombre").value.trim();
+  const costo = parseInt(document.getElementById("costo").value);
+  const precio = parseInt(document.getElementById("precio").value);
+  const stock = parseInt(document.getElementById("stock").value);
 
-      if (!nombre || isNaN(costo) || isNaN(precio) || isNaN(stock)) return alert("Completa todos los campos");
+  if (!nombre || isNaN(costo) || isNaN(precio) || isNaN(stock)) return alert("Completa todo");
 
-      const existe = inventario.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
-      if (existe) return alert("El producto ya existe, usa + para aumentar stock");
+  const existe = inventario.find(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+  if (existe) return alert("El producto ya existe");
 
-      inventario.push({ nombre, costo, precio, stock });
-      guardar();
-      mostrar();
-      document.querySelectorAll("input").forEach(i => i.value = "");
-    }
+  inventario.push({ nombre, costo, precio, stock });
+  guardar();
+  mostrar();
+}
 
-    function sumar(i) {
-      const cant = parseInt(prompt("Cantidad a agregar:", "0"));
-      if (isNaN(cant) || cant <= 0) return;
-      inventario[i].stock += cant;
-      guardar();
-      mostrar();
-    }
+function sumar(i) {
+  const cant = parseInt(prompt("Cantidad a agregar:", "0"));
+  if (cant > 0) inventario[i].stock += cant;
+  guardar();
+  mostrar();
+}
 
-    function editar(i) {
-      const nuevo = parseInt(document.getElementById(`edit-${i}`).value);
-      if (isNaN(nuevo) || nuevo < 0) return;
-      inventario[i].stock = nuevo;
-      guardar();
-      mostrar();
-    }
+function editar(i) {
+  const nuevo = parseInt(document.getElementById(`edit-${i}`).value);
+  if (!isNaN(nuevo)) inventario[i].stock = nuevo;
+  guardar();
+  mostrar();
+}
 
-    function eliminar(i) {
-      if (confirm("¿Eliminar producto?")) {
-        inventario.splice(i, 1);
-        guardar();
-        mostrar();
-      }
-    }
-
+function eliminar(i) {
+  if (confirm("¿Eliminar producto?")) {
+    inventario.splice(i, 1);
+    guardar();
     mostrar();
-  </script>
+  }
+}
+
+mostrar();
+</script>
+
 </body>
 </html>
-

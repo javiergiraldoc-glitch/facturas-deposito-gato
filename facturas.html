@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Historial - Depósito El Gato</title>
+  <title>Facturas Guardadas - Depósito El Gato</title>
   <style>
-    body { font-family: Arial; background: #f5f5f5; padding: 20px; }
+    body { background: #f5f5f5; padding: 20px; font-family: Arial; }
     .container {
       max-width: 900px; margin: auto; background: white;
       padding: 20px; border-radius: 10px;
@@ -13,29 +13,34 @@
     }
     .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .header img { height: 80px; }
-    .top-menu { display: flex; justify-content: space-around; margin-bottom: 15px; }
+    .top-menu {
+      display: flex; justify-content: space-around;
+      margin-bottom: 20px;
+    }
     .top-menu a {
-      background: #28a745; padding: 8px 15px;
-      text-decoration: none; color: white; border-radius: 5px;
+      text-decoration: none; color: white; background: #007BFF;
+      padding: 10px 20px; border-radius: 5px;
     }
     table { width: 100%; border-collapse: collapse; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     th { background: #007BFF; color: white; }
+    button { padding: 5px 10px; border: none; background: #28a745; color: white; }
   </style>
 </head>
 <body>
 
 <div class="container">
+
   <div class="header">
     <img src="logo.png">
-    <h1>Historial de Facturación</h1>
+    <h1>Facturas Guardadas</h1>
   </div>
 
   <div class="top-menu">
     <a href="index.html">Inicio</a>
     <a href="inventario.html">Inventario</a>
     <a href="facturacion.html">Facturación</a>
-    <a href="facturas.html">Facturas Guardadas</a>
+    <a href="historial.html">Historial</a>
   </div>
 
   <table>
@@ -46,6 +51,7 @@
         <th>NIT</th>
         <th>Fecha</th>
         <th>Total</th>
+        <th>Ver / Imprimir</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -65,8 +71,13 @@ historial.forEach(f => {
       <td>${f.nit}</td>
       <td>${f.fecha}</td>
       <td>$${f.total.toLocaleString("es-CO")}</td>
+      <td><button onclick='ver(${f.numero})'>Abrir</button></td>
     </tr>`;
 });
+
+function ver(num) {
+  alert("Por ahora se abre directo en Vista Previa desde Facturación.");
+}
 </script>
 
 </body>
