@@ -34,16 +34,10 @@
       padding: 20px; margin-top: 20px;
       border-radius: 10px; background: #f8f9fa;
     }
-    
-    .autocomplete-wrapper { position: relative; display: inline-block; }
-    .autocomplete-suggestions {
-      position: absolute; border: 1px solid #ccc; border-top: none;
-      z-index: 99; top: 100%; left: 5px; right: 5px;
-      background: #fff; max-height: 150px; overflow-y: auto;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 0 0 5px 5px;
+    .client-box {
+      background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 15px;
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
     }
-    .suggestion-item { padding: 8px; cursor: pointer; font-size: 14px; text-align: left; }
-    .suggestion-item:hover { background-color: #e9ecef; }
   </style>
 </head>
 <body>
@@ -62,16 +56,23 @@
     <a href="facturas.html" style="background:#007BFF;">Facturas Guardadas</a>
   </div>
 
-  <div style="background: #e9ecef; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
-    <div class="autocomplete-wrapper">
-      <input type="text" id="cliente" placeholder="🔍 Buscar o escribir Cliente" onkeyup="buscarClienteRecurrente(this.value)">
-      <div id="sugerenciasClientes" class="autocomplete-suggestions" style="display: none;"></div>
+  <!-- SECCIÓN DE CLIENTE -->
+  <div class="client-box">
+    <div style="width: 100%; margin-bottom: 5px;">
+      <label><strong>👤 Seleccionar Cliente Registrado:</strong></label>
+      <select id="selectCliente" onchange="autocompletarCliente()" style="width: 100%; font-weight: bold; background: #fff;">
+        <option value="">-- Seleccionar cliente habitual o escribir uno nuevo abajo --</option>
+      </select>
     </div>
-    <input type="text" id="nit" placeholder="NIT / Cédula">
-    <input type="date" id="fecha">
+
+    <input type="text" id="cliente" placeholder="Nombre completo del Cliente" style="flex: 2; min-width: 200px;">
+    <input type="text" id="nit" placeholder="NIT / Cédula" style="flex: 1; min-width: 130px;">
+    <input type="text" id="celular" placeholder="Celular / Teléfono" style="flex: 1; min-width: 130px;">
+    <input type="date" id="fecha" style="flex: 1;">
     <button onclick="nuevaFactura(true)" style="background:#dc3545;">🧾 Nueva / Limpiar</button>
   </div>
 
+  <!-- SECCIÓN DE PRODUCTOS -->
   <div style="background: #e9ecef; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
     <input type="text" id="buscarProd" placeholder="🔍 Filtrar producto..." onkeyup="buscarProducto()">
     <select id="productoSelect" style="max-width: 250px;"></select>
@@ -95,6 +96,7 @@
   <h3 id="total" style="text-align: right; margin-top: 15px; font-size: 22px; color: #28a745;">Total: $0</h3>
   <button onclick="vistaPrevia()" style="width: 100%; padding: 12px; font-size: 16px; background: #007BFF;">👁️ Ver Vista Previa de Factura</button>
 
+  <!-- VISTA PREVIA -->
   <div id="preview">
     <div class="header" style="border-bottom: 2px solid #333; padding-bottom: 5px;">
       <img src="logo.png" alt="Logo">
@@ -105,7 +107,7 @@
     </div>
 
     <p><strong>Cliente:</strong> <span id="prevCliente"></span></p>
-    <p><strong>NIT/Cédula:</strong> <span id="prevNit"></span></p>
+    <p><strong>NIT/Cédula:</strong> <span id="prevNit"></span> | <strong>Celular:</strong> <span id="prevCelular"></span></p>
     <p><strong>Fecha:</strong> <span id="prevFecha"></span></p>
 
     <table id="prevTabla">
@@ -135,6 +137,33 @@ let numFactura = parseInt(localStorage.getItem("numFactura") || "1");
 
 document.getElementById("fecha").valueAsDate = new Date();
 
+// Cargar Clientes en la lista desplegable
+function cargarDirectorioClientes() {
+  const select = document.getElementById("selectCliente");
+  select.innerHTML = '<option value="">-- Seleccionar cliente habitual o escribir uno nuevo abajo --</option>';
+  
+  clientesGuardados.forEach((c, index) => {
+    const opt = document.createElement("option");
+    opt.value = index;
+    opt.textContent = `${c.cliente} (Cédula/NIT: ${c.nit})`;
+    select.appendChild(opt);
+  });
+}
+
+function autocompletarCliente() {
+  const index = document.getElementById("selectCliente").value;
+  if (index !== "") {
+    const clienteSel = clientesGuardados[index];
+    document.getElementById("cliente").value = clienteSel.cliente;
+    document.getElementById("nit").value = clienteSel.nit;
+    document.getElementById("celular").value = clienteSel.celular || "";
+  } else {
+    document.getElementById("cliente").value = "";
+    document.getElementById("nit").value = "";
+    document.getElementById("celular").value = "";
+  }
+}
+
 const productoSelect = document.getElementById("productoSelect");
 function cargarProductos(lista) {
   productoSelect.innerHTML = "";
@@ -145,51 +174,12 @@ function cargarProductos(lista) {
     productoSelect.appendChild(opt);
   });
 }
-cargarProductos(inventario);
 
 function buscarProducto() {
   const texto = document.getElementById("buscarProd").value.toLowerCase();
   const filtrado = inventario.filter(p => p.nombre.toLowerCase().includes(texto));
   cargarProductos(filtrado);
 }
-
-function buscarClienteRecurrente(texto) {
-  const divSugerencias = document.getElementById("sugerenciasClientes");
-  if (!texto.trim()) {
-    divSugerencias.style.display = "none";
-    return;
-  }
-  
-  const filtrados = clientesGuardados.filter(c => 
-    c.cliente.toLowerCase().includes(texto.toLowerCase()) || 
-    c.nit.includes(texto)
-  );
-
-  if (filtrados.length === 0) {
-    divSugerencias.style.display = "none";
-    return;
-  }
-
-  divSugerencias.innerHTML = "";
-  filtrados.forEach(c => {
-    const item = document.createElement("div");
-    item.className = "suggestion-item";
-    item.textContent = `${c.cliente} (NIT: ${c.nit})`;
-    item.onclick = function() {
-      document.getElementById("cliente").value = c.cliente;
-      document.getElementById("nit").value = c.nit;
-      divSugerencias.style.display = "none";
-    };
-    divSugerencias.appendChild(item);
-  });
-  divSugerencias.style.display = "block";
-}
-
-document.addEventListener("click", function(e) {
-  if (e.target.id !== "cliente") {
-    document.getElementById("sugerenciasClientes").style.display = "none";
-  }
-});
 
 function nuevaFactura(devolverStock = false) {
   if (devolverStock && factura.length > 0) {
@@ -205,6 +195,7 @@ function nuevaFactura(devolverStock = false) {
   document.getElementById("preview").style.display = "none";
   document.getElementById("total").textContent = "Total: $0";
   document.getElementById("buscarProd").value = "";
+  document.getElementById("selectCliente").value = "";
 }
 
 function agregarItem() {
@@ -228,7 +219,6 @@ function agregarItem() {
   prod.stock -= cantidad;
   localStorage.setItem("inventario", JSON.stringify(inventario));
   
-  // Limpia los campos de entrada para el siguiente producto
   document.getElementById("buscarProd").value = "";
   cargarProductos(inventario);
   document.getElementById("cantidad").value = "";
@@ -270,13 +260,15 @@ function vistaPrevia() {
   if (factura.length === 0) return alert("La factura no tiene productos");
   const cliente = document.getElementById("cliente").value.trim();
   const nit = document.getElementById("nit").value.trim();
+  const celular = document.getElementById("celular").value.trim();
   const fecha = document.getElementById("fecha").value;
 
-  if (!cliente || !nit || !fecha) return alert("Por favor complete los datos del cliente");
+  if (!cliente || !nit || !fecha) return alert("Por favor complete al menos el nombre y la cédula/NIT del cliente");
 
   document.getElementById("numFactura").textContent = numFactura;
   document.getElementById("prevCliente").textContent = cliente;
   document.getElementById("prevNit").textContent = nit;
+  document.getElementById("prevCelular").textContent = celular || "N/A";
   document.getElementById("prevFecha").textContent = fecha;
 
   const tbody = document.querySelector("#prevTabla tbody");
@@ -296,26 +288,36 @@ function vistaPrevia() {
 function guardarFactura() {
   const cliente = document.getElementById("cliente").value.trim();
   const nit = document.getElementById("nit").value.trim();
+  const celular = document.getElementById("celular").value.trim();
   const fecha = document.getElementById("fecha").value;
   const total = factura.reduce((sum, f) => sum + f.total, 0);
 
-  const data = { numero: numFactura, cliente, nit, fecha, productos: factura, total };
+  const data = { numero: numFactura, cliente, nit, celular, fecha, productos: factura, total };
   historial.push(data);
   localStorage.setItem("historial", JSON.stringify(historial));
   
-  const existeCliente = clientesGuardados.some(c => c.nit === nit);
-  if (!existeCliente) {
-    clientesGuardados.push({ cliente, nit });
-    localStorage.setItem("clientesGuardados", JSON.stringify(clientesGuardados));
+  // Guardar o actualizar datos del cliente en la lista permanente
+  const indexExistente = clientesGuardados.findIndex(c => c.nit === nit);
+  if (indexExistente !== -1) {
+    clientesGuardados[indexExistente] = { cliente, nit, celular };
+  } else {
+    clientesGuardados.push({ cliente, nit, celular });
   }
+  localStorage.setItem("clientesGuardados", JSON.stringify(clientesGuardados));
   
   localStorage.setItem("numFactura", ++numFactura);
-  alert("Factura guardada exitosamente en la carpeta digital.");
+  alert("Factura guardada exitosamente y cliente registrado en el directorio.");
   
   document.getElementById("cliente").value = "";
   document.getElementById("nit").value = "";
+  document.getElementById("celular").value = "";
+  cargarDirectorioClientes();
   nuevaFactura(false);
 }
+
+// Inicialización de la página
+cargarProductos(inventario);
+cargarDirectorioClientes();
 </script>
 </body>
 </html>
