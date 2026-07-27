@@ -39,13 +39,15 @@
     <a href="facturas.html" style="background:#6c757d;">Facturas Guardadas</a>
   </div>
 
-  <!-- FORMULARIO PARA AGREGAR NUEVO PRODUCTO O ACTUALIZAR STOCK -->
+  <!-- FORMULARIO PARA AGREGAR NUEVO PRODUCTO O SUMAR STOCK -->
   <div class="form-box">
     <input type="hidden" id="indexProd">
     <input type="text" id="nombre" placeholder="Nombre del Producto" style="flex: 2; min-width: 200px;">
-    <input type="number" id="stock" placeholder="Cantidad (Stock)" min="0" style="flex: 1; min-width: 100px;">
+    <input type="number" id="stock" placeholder="Cantidad a ingresar/sumar" min="0" style="flex: 1; min-width: 150px;">
     <input type="number" id="precio" placeholder="Precio de Venta ($)" min="0" style="flex: 1; min-width: 120px;">
+    
     <button id="btnGuardar" onclick="guardarProducto()" style="background: #28a745;">💾 Guardar Producto</button>
+    <button id="btnSumar" onclick="guardarProducto(true)" style="background: #17a2b8; display: none;">➕ Sumar al Stock</button>
     <button id="btnCancelar" onclick="limpiarFormulario()" style="background: #6c757d; display: none;">Cancelar</button>
   </div>
 
@@ -84,7 +86,7 @@ function listarProductos() {
           <td>${prod.stock} ${prod.stock <= 5 ? '⚠️ Bajo' : ''}</td>
           <td>$${prod.precio.toLocaleString("es-CO")}</td>
           <td>
-            <button onclick="editarProducto(${i})" style="background: #ffc107; color: black; padding: 4px 10px; margin-right: 5px;">✏️ Editar / Stock</button>
+            <button onclick="editarProducto(${i})" style="background: #ffc107; color: black; padding: 4px 10px; margin-right: 5px;">✏️ Editar / Modificar</button>
             <button onclick="eliminarProducto(${i})" style="background: #dc3545; padding: 4px 10px;">🗑️ Borrar</button>
           </td>
         </tr>`;
@@ -96,32 +98,49 @@ function listarProductos() {
   }
 }
 
-function guardarProducto() {
+function guardarProducto(soloSumar = false) {
   const nombre = document.getElementById("nombre").value.trim();
-  const stock = parseInt(document.getElementById("stock").value);
+  const stockIngresado = parseInt(document.getElementById("stock").value);
   const precio = parseInt(document.getElementById("precio").value);
   const index = document.getElementById("indexProd").value;
 
-  if (!nombre || isNaN(stock) || isNaN(precio) || stock < 0 || precio < 0) {
+  if (!nombre || isNaN(stockIngresado) || isNaN(precio) || stockIngresado < 0 || precio < 0) {
     return alert("Por favor, llene todos los campos con valores válidos.");
   }
 
-  const nuevoProd = { nombre, stock, precio };
+  // Buscar si el producto ya existe en la lista (por nombre)
+  const indexExistente = inventario.findIndex(p => p.nombre.toLowerCase() === nombre.toLowerCase());
 
   if (index === "") {
-    // Si no se está editando, verificar que no esté duplicado
-    const existe = inventario.some(p => p.nombre.toLowerCase() === nombre.toLowerCase());
-    if (existe) return alert("Este producto ya existe. Use el botón 'Editar / Stock' en la tabla para modificarlo.");
-    
-    inventario.push(nuevoProd);
+    // CASO 1: Creando o agregando desde cero
+    if (indexExistente !== -1) {
+      // El producto ya existía
+      const confirmar = confirm(`El producto "${inventario[indexExistente].nombre}" ya existe con un stock de ${inventario[indexExistente].stock}.\n\n¿Deseas SUMAR las ${stockIngresado} unidades al stock existente?`);
+      
+      if (confirmar) {
+        inventario[indexExistente].stock += stockIngresado;
+        inventario[indexExistente].precio = precio; // Actualiza precio si se cambió
+      } else {
+        return; // Cancela la operación
+      }
+    } else {
+      // Producto totalmente nuevo
+      inventario.push({ nombre, stock: stockIngresado, precio });
+    }
   } else {
-    // Si se está editando, actualizar los datos
-    inventario[index] = nuevoProd;
+    // CASO 2: Editando a través del botón amarillo
+    if (soloSumar) {
+      inventario[index].stock += stockIngresado;
+    } else {
+      inventario[index].stock = stockIngresado; // Reemplaza
+    }
+    inventario[index].nombre = nombre;
+    inventario[index].precio = precio;
   }
 
   localStorage.setItem("inventario", JSON.stringify(inventario));
   
-  // Limpiar campos de texto y la búsqueda
+  // Limpiar formulario y la búsqueda
   limpiarFormulario();
   document.getElementById("buscador").value = "";
   listarProductos();
@@ -130,12 +149,16 @@ function guardarProducto() {
 function editarProducto(i) {
   document.getElementById("indexProd").value = i;
   document.getElementById("nombre").value = inventario[i].nombre;
-  document.getElementById("stock").value = inventario[i].stock;
+  document.getElementById("stock").value = ""; // Se deja limpio para que ingreses cuánto vas a sumar o el nuevo total
+  document.getElementById("stock").placeholder = "Cantidad";
   document.getElementById("precio").value = inventario[i].precio;
   
+  // Mostrar botones de acción
   document.getElementById("btnGuardar").style.background = "#ffc107";
   document.getElementById("btnGuardar").style.color = "black";
-  document.getElementById("btnGuardar").textContent = "🔄 Actualizar Producto / Stock";
+  document.getElementById("btnGuardar").textContent = "🔄 Reemplazar Stock";
+  
+  document.getElementById("btnSumar").style.display = "inline-block";
   document.getElementById("btnCancelar").style.display = "inline-block";
 }
 
@@ -151,11 +174,14 @@ function limpiarFormulario() {
   document.getElementById("indexProd").value = "";
   document.getElementById("nombre").value = "";
   document.getElementById("stock").value = "";
+  document.getElementById("stock").placeholder = "Cantidad a ingresar/sumar";
   document.getElementById("precio").value = "";
   
   document.getElementById("btnGuardar").style.background = "#28a745";
   document.getElementById("btnGuardar").style.color = "white";
   document.getElementById("btnGuardar").textContent = "💾 Guardar Producto";
+  
+  document.getElementById("btnSumar").style.display = "none";
   document.getElementById("btnCancelar").style.display = "none";
 }
 
