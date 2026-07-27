@@ -3,24 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Historial - Depósito El Gato</title>
+  <title>Inventario - Depósito El Gato</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
     .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
     .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .header img { height: 80px; }
-    .top-menu { display: flex; justify-content: space-around; margin-bottom: 20px; gap:10px; flex-wrap:wrap; }
-    .top-menu a { background: #007BFF; padding: 10px 20px; text-decoration: none; color: white; border-radius: 5px; font-weight:bold; }
+    .top-menu { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 10px; flex-wrap: wrap; }
+    .top-menu a { text-decoration: none; background: #007BFF; color: white; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
     
-    .filters-panel { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; }
-    .filters-panel input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
-    .filter-group { display: flex; flex-direction: column; gap: 5px; font-size: 14px; font-weight: bold; }
+    .form-box { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    input { padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
     
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-    th { background: #343a40; color: white; }
+    th { background: #28a745; color: white; }
     tr:nth-child(even) { background-color: #f9f9f9; }
-    .summary-box { text-align: right; margin-top: 15px; padding: 15px; background: #d4edda; color: #155724; border-radius: 8px; font-size: 18px; }
+    
+    .search-box { width: 100%; padding: 10px; margin-bottom: 15px; border: 2px solid #28a745; border-radius: 5px; box-sizing: border-box; font-size: 15px; }
   </style>
 </head>
 <body>
@@ -28,81 +29,138 @@
 <div class="container">
   <div class="header">
     <img src="logo.png" alt="Logo">
-    <h1>Historial de Ventas</h1>
+    <h1>Control de Inventario</h1>
   </div>
 
   <div class="top-menu">
     <a href="index.html">Inicio</a>
-    <a href="inventario.html" style="background:#28a745;">Inventario</a>
-    <a href="facturacion.html">Facturación</a>
+    <a href="facturacion.html" style="background:#28a745;">Facturación</a>
+    <a href="historial.html" style="background:#17a2b8;">Historial</a>
     <a href="facturas.html" style="background:#6c757d;">Facturas Guardadas</a>
   </div>
 
-  <div class="filters-panel">
-    <div class="filter-group">
-      <label>Buscar Cliente / NIT:</label>
-      <input type="text" id="searchClient" placeholder="Ej: Juan..." onkeyup="filtrarHistorial()">
-    </div>
-    <div class="filter-group">
-      <label>Desde:</label>
-      <input type="date" id="dateFrom" onchange="filtrarHistorial()">
-    </div>
-    <div class="filter-group">
-      <label>Hasta:</label>
-      <input type="date" id="dateTo" onchange="filtrarHistorial()">
-    </div>
+  <!-- FORMULARIO PARA AGREGAR NUEVO PRODUCTO O ACTUALIZAR STOCK -->
+  <div class="form-box">
+    <input type="hidden" id="indexProd">
+    <input type="text" id="nombre" placeholder="Nombre del Producto" style="flex: 2; min-width: 200px;">
+    <input type="number" id="stock" placeholder="Cantidad (Stock)" min="0" style="flex: 1; min-width: 100px;">
+    <input type="number" id="precio" placeholder="Precio de Venta ($)" min="0" style="flex: 1; min-width: 120px;">
+    <button id="btnGuardar" onclick="guardarProducto()" style="background: #28a745;">💾 Guardar Producto</button>
+    <button id="btnCancelar" onclick="limpiarFormulario()" style="background: #6c757d; display: none;">Cancelar</button>
   </div>
 
+  <!-- BUSCADOR EN TIEMPO REAL -->
+  <input type="text" id="buscador" class="search-box" placeholder="🔍 Buscar producto en el depósito..." onkeyup="listarProductos()">
+
+  <!-- TABLA DE ARTÍCULOS -->
   <table>
     <thead>
       <tr>
-        <th>No. Factura</th>
-        <th>Cliente</th>
-        <th>NIT / Cédula</th>
-        <th>Fecha</th>
-        <th>Total Cobrado</th>
+        <th>Producto / Artículo</th>
+        <th>Stock Disponible</th>
+        <th>Precio Unitario</th>
+        <th>Acciones</th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
   </table>
-
-  <div class="summary-box">
-    <strong>Total Ventas en Periodo:</strong> <span id="totalVentas">$0</span>
-  </div>
 </div>
 
 <script>
-const historial = JSON.parse(localStorage.getItem("historial")) || [];
-const tbody = document.getElementById("tbody");
-const totalVentasEl = document.getElementById("totalVentas");
+let inventario = JSON.parse(localStorage.getItem("inventario")) || [];
 
-function filtrarHistorial() {
-  const buscador = document.getElementById("searchClient").value.toLowerCase();
-  const fechaDesde = document.getElementById("dateFrom").value;
-  const fechaHasta = document.getElementById("dateTo").value;
-  
+function listarProductos() {
+  const tbody = document.getElementById("tbody");
+  const filtro = document.getElementById("buscador").value.toLowerCase();
   tbody.innerHTML = "";
-  let sumaTotal = 0;
-  let contador = 0;
 
-  historial.forEach(f => {
-    const coincideTexto = f.cliente.toLowerCase().includes(buscador) || f.nit.toLowerCase().includes(buscador);
-    let coincideFecha = true;
-    if (fechaDesde && f.fecha < fechaDesde) coincideFecha = false;
-    if (fechaHasta && f.fecha > fechaHasta) coincideFecha = false;
-
-    if (coincideTexto && coincideFecha) {
-      sumaTotal += f.total;
-      contador++;
-      tbody.innerHTML += `<tr><td><strong>${f.numero}</strong></td><td>${f.cliente}</td><td>${f.nit}</td><td>${f.fecha}</td><td>$${f.total.toLocaleString("es-CO")}</td></tr>`;
+  inventario.forEach((prod, i) => {
+    if (prod.nombre.toLowerCase().includes(filtro)) {
+      const alertaStock = prod.stock <= 5 ? 'style="color: red; font-weight: bold; background: #fdf2f2;"' : '';
+      
+      tbody.innerHTML += `
+        <tr ${alertaStock}>
+          <td style="text-align: left; padding-left: 15px;">${prod.nombre}</td>
+          <td>${prod.stock} ${prod.stock <= 5 ? '⚠️ Bajo' : ''}</td>
+          <td>$${prod.precio.toLocaleString("es-CO")}</td>
+          <td>
+            <button onclick="editarProducto(${i})" style="background: #ffc107; color: black; padding: 4px 10px; margin-right: 5px;">✏️ Editar / Stock</button>
+            <button onclick="eliminarProducto(${i})" style="background: #dc3545; padding: 4px 10px;">🗑️ Borrar</button>
+          </td>
+        </tr>`;
     }
   });
 
-  if (contador === 0) tbody.innerHTML = `<tr><td colspan="5">No hay registros para este filtro.</td></tr>`;
-  totalVentasEl.textContent = "$" + sumaTotal.toLocaleString("es-CO");
+  if (tbody.innerHTML === "") {
+    tbody.innerHTML = `<tr><td colspan="4" style="color: #777;">No se encontraron productos en el depósito.</td></tr>`;
+  }
 }
 
-filtrarHistorial();
+function guardarProducto() {
+  const nombre = document.getElementById("nombre").value.trim();
+  const stock = parseInt(document.getElementById("stock").value);
+  const precio = parseInt(document.getElementById("precio").value);
+  const index = document.getElementById("indexProd").value;
+
+  if (!nombre || isNaN(stock) || isNaN(precio) || stock < 0 || precio < 0) {
+    return alert("Por favor, llene todos los campos con valores válidos.");
+  }
+
+  const nuevoProd = { nombre, stock, precio };
+
+  if (index === "") {
+    // Si no se está editando, verificar que no esté duplicado
+    const existe = inventario.some(p => p.nombre.toLowerCase() === nombre.toLowerCase());
+    if (existe) return alert("Este producto ya existe. Use el botón 'Editar / Stock' en la tabla para modificarlo.");
+    
+    inventario.push(nuevoProd);
+  } else {
+    // Si se está editando, actualizar los datos
+    inventario[index] = nuevoProd;
+  }
+
+  localStorage.setItem("inventario", JSON.stringify(inventario));
+  
+  // Limpiar campos de texto y la búsqueda
+  limpiarFormulario();
+  document.getElementById("buscador").value = "";
+  listarProductos();
+}
+
+function editarProducto(i) {
+  document.getElementById("indexProd").value = i;
+  document.getElementById("nombre").value = inventario[i].nombre;
+  document.getElementById("stock").value = inventario[i].stock;
+  document.getElementById("precio").value = inventario[i].precio;
+  
+  document.getElementById("btnGuardar").style.background = "#ffc107";
+  document.getElementById("btnGuardar").style.color = "black";
+  document.getElementById("btnGuardar").textContent = "🔄 Actualizar Producto / Stock";
+  document.getElementById("btnCancelar").style.display = "inline-block";
+}
+
+function eliminarProducto(i) {
+  if (confirm(`¿Desea eliminar "${inventario[i].nombre}" del inventario?`)) {
+    inventario.splice(i, 1);
+    localStorage.setItem("inventario", JSON.stringify(inventario));
+    listarProductos();
+  }
+}
+
+function limpiarFormulario() {
+  document.getElementById("indexProd").value = "";
+  document.getElementById("nombre").value = "";
+  document.getElementById("stock").value = "";
+  document.getElementById("precio").value = "";
+  
+  document.getElementById("btnGuardar").style.background = "#28a745";
+  document.getElementById("btnGuardar").style.color = "white";
+  document.getElementById("btnGuardar").textContent = "💾 Guardar Producto";
+  document.getElementById("btnCancelar").style.display = "none";
+}
+
+// Cargar la lista al abrir la página
+listarProductos();
 </script>
 </body>
 </html>
