@@ -3,82 +3,158 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facturas Guardadas - Depósito El Gato</title>
+  <title>Carpeta de Facturas - Depósito El Gato</title>
   <style>
-    body { background: #f5f5f5; padding: 20px; font-family: Arial; }
-    .container {
-      max-width: 900px; margin: auto; background: white;
-      padding: 20px; border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
+    body { background: #f5f5f5; padding: 20px; font-family: Arial, sans-serif; }
+    .container { max-width: 950px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
     .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
     .header img { height: 80px; }
-    .top-menu {
-      display: flex; justify-content: space-around;
-      margin-bottom: 20px;
-    }
-    .top-menu a {
-      text-decoration: none; color: white; background: #007BFF;
-      padding: 10px 20px; border-radius: 5px;
-    }
-    table { width: 100%; border-collapse: collapse; }
+    .top-menu { display: flex; justify-content: space-around; margin-bottom: 25px; gap: 10px; flex-wrap: wrap; }
+    .top-menu a { text-decoration: none; color: white; background: #007BFF; padding: 10px 20px; border-radius: 5px; font-weight: bold; }
+    
+    .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 20px; margin-top: 15px; }
+    .mini-factura { background: #fff; border: 2px solid #dee2e6; border-top: 8px solid #007BFF; border-radius: 6px; padding: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: relative; }
+    .mini-factura h3 { margin: 0 0 8px 0; font-size: 16px; color: #007BFF; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    .mini-factura p { margin: 4px 0; font-size: 13px; color: #333; }
+    .mini-actions { display: flex; gap: 5px; margin-top: 10px; justify-content: space-between; }
+    .mini-actions button { padding: 5px 8px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+    
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); overflow: auto; }
+    .modal-content { background-color: #fff; margin: 4% auto; padding: 30px; border-radius: 10px; max-width: 650px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #007BFF; color: white; }
-    button { padding: 5px 10px; border: none; background: #28a745; color: white; }
+    th { background: #343a40; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+      .modal-actions, .top-menu, .folder-grid, h1, .header { display: none !important; }
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-
   <div class="header">
-    <img src="logo.png">
-    <h1>Facturas Guardadas</h1>
+    <img src="logo.png" alt="Logo">
+    <h1>Carpeta de Facturas Guardadas</h1>
   </div>
 
   <div class="top-menu">
     <a href="index.html">Inicio</a>
-    <a href="inventario.html">Inventario</a>
+    <a href="inventario.html" style="background:#28a745;">Inventario</a>
     <a href="facturacion.html">Facturación</a>
-    <a href="historial.html">Historial</a>
+    <a href="historial.html" style="background:#17a2b8;">Historial</a>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>No. Factura</th>
-        <th>Cliente</th>
-        <th>NIT</th>
-        <th>Fecha</th>
-        <th>Total</th>
-        <th>Ver / Imprimir</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <h2 style="font-size: 18px; color: #555; border-bottom: 2px solid #eee; padding-bottom: 5px;">Vista Minimizada de Archivos</h2>
+  <div class="folder-grid" id="carpetaDigital"></div>
+</div>
 
+<div id="facturaModal" class="modal">
+  <div class="modal-content">
+    <div id="printArea">
+      <div style="display: flex; border-bottom: 2px solid #333; padding-bottom: 10px; align-items: center; gap: 15px;">
+        <img src="logo.png" alt="Logo" style="height: 60px;">
+        <div>
+          <h2 style="margin:0;">Depósito El Gato</h2>
+          <p style="margin: 0; font-size: 13px; color: #555;">Comprobante de Venta</p>
+        </div>
+        <div style="margin-left: auto; text-align: right;">
+          <h3 style="margin: 0; color: #007BFF;">Factura No. <span id="mdNum"></span></h3>
+          <p style="margin: 3px 0 0 0; font-size: 13px;"><strong>Fecha:</strong> <span id="mdFecha"></span></p>
+        </div>
+      </div>
+
+      <div style="margin-top: 15px; margin-bottom: 15px; font-size: 14px; line-height: 1.5;">
+        <p style="margin:3px 0;"><strong>Cliente:</strong> <span id="mdCliente"></span></p>
+        <p style="margin:3px 0;"><strong>NIT / Cédula:</strong> <span id="mdNit"></span></p>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unitario</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="mdProductos"></tbody>
+      </table>
+
+      <h3 id="mdTotal" style="text-align: right; margin-top: 15px; font-size: 18px; color: #28a745;">Total: $0</h3>
+    </div>
+
+    <div class="modal-actions" style="display: flex; justify-content: space-between; margin-top: 20px;">
+      <button onclick="cerrarModal()" style="padding: 10px 15px; background: #6c757d; color:white; border:none; border-radius:5px; cursor:pointer;">❌ Cerrar</button>
+      <button onclick="descargarPDF()" style="padding: 10px 20px; background: #28a745; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:14px;">🖨️ Descargar PDF / Imprimir</button>
+    </div>
+  </div>
 </div>
 
 <script>
 let historial = JSON.parse(localStorage.getItem("historial")) || [];
-const tbody = document.getElementById("tbody");
+const carpetaDigital = document.getElementById("carpetaDigital");
 
-historial.forEach(f => {
-  tbody.innerHTML += `
-    <tr>
-      <td>${f.numero}</td>
-      <td>${f.cliente}</td>
-      <td>${f.nit}</td>
-      <td>${f.fecha}</td>
-      <td>$${f.total.toLocaleString("es-CO")}</td>
-      <td><button onclick='ver(${f.numero})'>Abrir</button></td>
-    </tr>`;
-});
+function cargarCarpeta() {
+  carpetaDigital.innerHTML = "";
+  if(historial.length === 0) {
+    carpetaDigital.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777; padding: 20px;">La carpeta está vacía. No hay facturas creadas.</p>`;
+    return;
+  }
+  
+  historial.forEach(f => {
+    carpetaDigital.innerHTML += `
+      <div class="mini-factura">
+        <h3>📄 Factura #${f.numero}</h3>
+        <p><strong>Cliente:</strong> ${f.cliente.substring(0, 15)}</p>
+        <p><strong>Fecha:</strong> ${f.fecha}</p>
+        <p style="font-weight:bold; color:#28a745;">Total: $${f.total.toLocaleString("es-CO")}</p>
+        <div class="mini-actions">
+          <button style="background:#007BFF;" onclick="ver(${f.numero})">👁️ Abrir</button>
+          <button style="background:#dc3545;" onclick="eliminarFactura(${f.numero})">🗑️ Borrar</button>
+        </div>
+      </div>`;
+  });
+}
 
 function ver(num) {
-  alert("Por ahora se abre directo en Vista Previa desde Facturación.");
-}
-</script>
+  const fac = historial.find(f => f.numero === num);
+  if (!fac) return alert("Archivo no encontrado");
 
+  document.getElementById("mdNum").textContent = fac.numero;
+  document.getElementById("mdFecha").textContent = fac.fecha;
+  document.getElementById("mdCliente").textContent = fac.cliente;
+  document.getElementById("mdNit").textContent = fac.nit;
+
+  const mdProductos = document.getElementById("mdProductos");
+  mdProductos.innerHTML = "";
+  fac.productos.forEach(p => {
+    mdProductos.innerHTML += `<tr><td>${p.nombre}</td><td>${p.cantidad}</td><td>$${p.precio.toLocaleString("es-CO")}</td><td>$${p.total.toLocaleString("es-CO")}</td></tr>`;
+  });
+
+  document.getElementById("mdTotal").textContent = "Total: $" + fac.total.toLocaleString("es-CO");
+  document.getElementById("facturaModal").style.display = "block";
+}
+
+function cerrarModal() { document.getElementById("facturaModal").style.display = "none"; }
+function descargarPDF() { window.print(); }
+
+function eliminarFactura(num) {
+  if (confirm(`¿Desea eliminar permanentemente la Factura No. ${num} de la carpeta?`)) {
+    historial = historial.filter(f => f.numero !== num);
+    localStorage.setItem("historial", JSON.stringify(historial));
+    cargarCarpeta();
+  }
+}
+
+window.onclick = function(e) {
+  if (e.target == document.getElementById("facturaModal")) cerrarModal();
+}
+
+cargarCarpeta();
+</script>
 </body>
 </html>

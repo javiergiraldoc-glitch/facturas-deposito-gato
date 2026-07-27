@@ -30,14 +30,27 @@
     .top-menu {
       display: flex;
       justify-content: space-around;
-      margin-bottom: 15px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .top-menu a {
       text-decoration: none;
       background: #007BFF;
       color: white;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 6px;
+      font-weight: bold;
+    }
+    .top-menu a:hover {
+      background: #0056b3;
+    }
+    .welcome-box {
+      text-align: center;
+      padding: 40px;
+      background: #e9ecef;
+      border-radius: 8px;
+      margin-top: 20px;
     }
   </style>
 </head>
@@ -45,19 +58,21 @@
   <div class="container">
 
     <div class="header">
-      <img src="logo.png">
+      <img src="logo.png" alt="Logo">
       <h1>Depósito El Gato</h1>
     </div>
 
     <div class="top-menu">
-      <a href="inventario.html">Inventario</a>
+      <a href="inventario.html" style="background: #28a745;">Inventario</a>
       <a href="facturacion.html">Facturación</a>
-      <a href="historial.html">Historial</a>
-      <a href="facturas.html">Facturas Guardadas</a>
+      <a href="historial.html" style="background: #17a2b8;">Historial</a>
+      <a href="facturas.html" style="background: #007BFF;">Facturas Guardadas</a>
     </div>
 
-    <h2>Bienvenido al sistema</h2>
-    <p>Seleccione una opción del menú.</p>
+    <div class="welcome-box">
+      <h2>Bienvenido al sistema de administración</h2>
+      <p style="color: #555; font-size: 16px;">Seleccione una opción del menú superior para empezar a trabajar.</p>
+    </div>
 
   </div>
 </body>
